@@ -1,0 +1,642 @@
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/2.2.0/jquery.min.js"></script>
+<link rel="stylesheet" href="https://ajax.googleapis.com/ajax/libs/jqueryui/1.11.4/themes/smoothness/jquery-ui.css">
+<script src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.11.4/jquery-ui.min.js"></script>
+<script src="https://cdn.socket.io/socket.io-1.4.3.js"></script>
+<script src="dom.js"></script>
+<script src="widgets.js"></script>
+<script src="chnlmanager.js"></script>
+<script src="edit_area/edit_area_full.js"></script>
+<style>
+body {
+	background-color:gray;
+}
+fieldset {
+	border-width: 3px;
+}
+label {
+	margin: 1em 1em 1em 0.5em;
+}
+#files {
+	background-color: #808080;
+	width:12em;
+	height:20em;
+	float:left;
+}
+.running {
+	color: green;
+}
+.notrunning {
+	color: red;
+	
+}
+.paused {
+	color: orange;	
+}
+.filelist {
+	background-color: #888;
+	width:11em;
+	float:left;
+}
+.filelistitem {
+	width:10em;
+	float:left;
+	background-color:lightgrey;
+}
+.run {
+	float:right;
+}
+.cmd {
+	display:flex;
+}
+.ui-selectmenu-button {
+}
+.ui-selectmenu-button span.ui-selectmenu-text {
+	xpadding: 0 1em 0 0.5em;
+}
+.ui-dialog .ui-dialog-content {
+	background-color:lightgrey;
+}
+.ui-button-text-only .ui-button-text {
+}
+.cmdselect {
+	width:100;
+	padding: 0.1em 1em 0.1em 0.5em;
+}
+.stopcmdselect {
+	width:100;
+	padding: 0.1em 1em 0.1em 0.5em;
+}
+.btn-up {
+	background-color: #0f0;
+	margin:5px;
+	width:40;
+}
+.btn-down {
+	background-color: #f00;
+	margin:5px;
+	width:40;
+}
+#frame_editor {
+	float:left;
+	margin: 0.2em;
+}
+#projectpanel {
+		width: 100%;
+}
+#editor {
+	float:left;
+	margin: 0.4em;
+}
+#motors {
+	display: flex;
+}
+#sensors {
+	display: flex;
+}
+#custom1 {
+	display: flex;
+}
+#custom2 {
+	display: flex;
+}
+#custom3 {
+	display: flex;
+}
+#projectcmd {
+	display: flex;
+	padding:0;
+}
+#radar {
+	display: flex;
+}
+.motor {
+	Width:200px;
+	float:left;
+}
+.sensor {
+	Width:200px;
+	float:left;
+}
+.powersupply {
+	Width:462px;
+}
+.motorvalue{
+	float: right;
+}
+.ui-button .ui-icon.wsoptions {
+    background-image: url("icons/advancedsettings.png");
+    width: 32px;
+    height: 32px; 
+	margin-top:-16;
+	margin-left:-5;
+}
+.ui-button .ui-icon.wsplay {
+    background-image: url("icons/player_play.png");
+    width: 32px;
+    height: 32px; 
+	margin-top:-16;
+	margin-left:-5;
+}
+.ui-button .ui-icon.wscancel {
+    background-image: url("icons/cancel.png");
+    width: 32px;
+    height: 32px; 
+	margin-top:-16;
+	margin-left:-5;
+}
+.ui-button .ui-icon.wsstop {
+    background-image: url("icons/stop.png");
+    width: 32px;
+    height: 32px; 
+	margin-top:-16;
+	margin-left:-5;
+}
+.ui-button .ui-icon.wspause {
+    background-image: url("icons/player_pause.png");
+    width: 32px;
+    height: 32px; 
+	margin-top:-16;
+	margin-left:-5;
+}
+.ui-button .ui-icon.wsresume {
+    background-image: url("icons/next.png");
+    width: 32px;
+    height: 32px; 
+	margin-top:-16;
+	margin-left:-5;
+}
+.ui-button .ui-icon.wsexit {
+    background-image: url("icons/exit.png");
+    width: 32px;
+    height: 32px; 
+	margin-top:-16;
+	margin-left:-5;
+}
+.ui-button .ui-icon.wsadd {
+    background-image: url("icons/edit_add.png");
+    width: 32px;
+    height: 32px; 
+	margin-top:-16;
+	margin-left:-5;
+}
+.ui-button .ui-icon.wsnewproject {
+    background-image: url("icons/folder_new.png");
+    width: 32px;
+    height: 32px; 
+	margin-top:-16;
+	margin-left:-5;
+}
+.ui-button .ui-icon.wslog {
+    background-image: url("icons/news_subscribe.png");
+    width: 32px;
+    height: 32px; 
+	margin-top:-16;
+	margin-left:-5;
+}
+.ui-button .ui-icon.wsclear {
+    background-image: url("icons/view_remove.png");
+    width: 32px;
+    height: 32px; 
+	margin-top:-16;
+	margin-left:-5;
+}
+</style>
+<script>
+var chnlman;
+var myplug = {
+	init: function() {},
+	execCommand: function(cmd, param) {
+		if(cmd!="new_document") return true;
+		//console.log("New document");
+		return false;
+	}
+}
+editAreaLoader.init({
+	id: "editor"	// id of the textarea to transform	
+	,start_highlight: true
+	,allow_toggle: false
+	,language: "en"
+	,syntax: "html"	
+	,toolbar: "save, load, |,search, go_to_line, |, undo, redo, |, select_font, |, syntax_selection, |, change_smooth_selection, highlight, reset_highlight, |, help"
+	,syntax_selection_allow: "css,html,js,c,cpp"
+	,save_callback: "my_save"
+	,load_callback: "my_load"
+	,is_multi_files: true
+	,allow_resize: "both"
+	,min_width: 1200
+	,min_height: 700
+	,max_width: 1600
+	,max_height: 800
+//	,EA_file_close_callback:"my_close"
+	,EA_load_callback: "editAreaLoaded"
+	,show_line_colors: true
+});
+function editAreaLoaded(id){
+}
+// callback functions
+
+function my_close(ed) {
+	//console.log(ed);
+}
+function my_load(id) {
+//	console.log("Load ",id);
+	chnlman.send("files:" + config.current + ";");	
+}
+function my_save(id, content){
+	var fn=editAreaLoader.getCurrentFile(id).id;
+//	console.log("Fn ",config.current + "/" + fn);
+	chnlman.send("savefile:" + config.current + "/" + fn + ";" + content);
+//	editAreaLoader.execCommand(id,"files")[fn].edited=false;
+	editAreaLoader.set_file_edited_mode(id,false);
+	return 0;
+}
+function closefile(id,save) {
+	var fn=editAreaLoader.getFile("editor",id);
+//	console.log("File data ",fn.text);
+	if(save) chnlman.send("savefile:" + config.current + "/" + id + ";" + fn.text);
+	editAreaLoader.closeFile("editor",id);
+}
+var config={};
+var runningflag=0;
+$(function() {
+	function Log(msg) {
+		$("#logscroll").prepend(Div(msg).render());		
+	}
+	function stopscript() {
+		if(runningflag==0) return;
+		chnlman.send("jscontrol:stop;"); 
+		$("#runstatus").html("Not running").addClass("notrunning")
+		if(runningflag==1) $("#runflag").removeClass("running");
+		if(runningflag==2) $("#runflag").removeClass("paused");
+		runningflag=0;
+		Log("Stopping project <strong>" + config.current + "</strong>, robot script <strong>" + config.startscript + "</strong> and UI script <strong>" + config.uiscript + "</strong>");		
+	}
+	function pausescript() {
+		if(runningflag!=1) return;
+		chnlman.send("jscontrol:pause;"); 
+		$("#runstatus").html("Paused").addClass("paused").removeClass("running");
+		runningflag=2;
+		Log("Pauseing project <strong>" + config.current + "</strong>, robot script <strong>" + config.startscript + "</strong> and UI script <strong>" + config.uiscript + "</strong>");		
+	}
+	function resumescript() {
+		if(runningflag!=2) return;
+		chnlman.send("jscontrol:resume;"); 
+		$("#runstatus").html("Running").addClass("running").removeClass("paused");
+		runningflag=1;
+		Log("Resumeing project <strong>" + config.current + "</strong>, robot script <strong>" + config.startscript + "</strong> and UI script <strong>" + config.uiscript + "</strong>");		
+	}
+	function runscript() {
+		$("#logdlg").dialog("close");
+		chnlman.send("runscript:" + config.current + "/" + config.startscript + ";");
+		var pagescript="projects/" + config.current + "/" + config.uiscript;
+		$.ajax({
+		  url: pagescript,
+		  beforeSend: function( xhr ) {
+			xhr.overrideMimeType( "application/javascript; charset=x-user-defined" );
+		  }}).done(function( data ) { });
+		
+		$("#runstatus").html("Running").addClass("running").removeClass("notrunning");
+		runningflag=1;
+		div=Div(Div().id("logscroll")).id("logdlg");
+		div.render($("body"));
+		$("#logdlg").dialog({
+			width: 750,
+			minHeight: 550,
+			maxHeight: 550,
+			buttons:[
+				{
+					text:"Run",
+					icons: { primary: "wsplay"},
+					click:runscript
+				},
+				{
+					text:"Pause",
+					icons: { primary: "wspause"},
+					click:function() {
+						pausescript();
+					}
+				},
+				{
+					text:"Resume",
+					icons: { primary: "wsresume"},
+					click:function() {
+						resumescript();
+					}
+				},
+				{
+					text:"Stop",
+					icons: { primary: "wsstop"},
+					click:function() {
+						stopscript();
+					}
+				},
+				{
+					text:"Clear",
+					icons: { primary: "ui-icon-cancel"},
+					click:function() {
+						$("#logscroll").html("");
+					}
+				},
+				{
+					text:"Close",
+					icons: { primary: "ui-icon-close"},
+					click:function() {
+						$("#logdlg").dialog("close");
+					}
+				},
+			],
+			title:"Log"
+		});
+		Log("Running project <strong>" + 
+				config.current + 
+				"</strong>, robot script <strong>" + 
+				config.startscript + 
+				"</strong> and UI script <strong>" + 
+				config.uiscript + "</strong>");
+	}
+
+	function powerData(data) {
+		$("#voltvalue").html(parseFloat(data.voltage_now/1000000.0).toFixed(2));
+		$("#currentvalue").html(parseFloat(data.current_now/1000.0).toFixed(1));
+		$("#pstype").html(data.type);
+	}
+	function systemMsg(data) {
+		console.log(data);
+		if(data.reson=="rescaning") {
+			$(".sensor").Sensor("clear");
+		}
+	}
+	chnlman = new chnlManager();
+	chnlman.on("network",function(data) { 
+		switch(data.status) {
+			case "connected":
+				chnlman.send("projects:get;");
+				$("#sckStatus").html("Connected");
+			break;
+			case "disconnected":
+				$("#sckStatus").html("Disconnected");
+				$(".portstatus").html("Disconnected");
+			break;
+			default:
+				concole.log("Unknown network status")
+		}
+	});
+	chnlman.on("log",function(data) { $("#logscroll").prepend(Div(data.message).render()); });
+	chnlman.on("power",powerData);
+	chnlman.on("system",systemMsg);
+	chnlman.on("projects",function(data) {
+		config = data.config;
+		var prj=Fieldset(Legend("Project " + data.config.current)).id("projectpanel");
+		var statusbar=Div("Status: ").addStyle("font-size:20;margin-bottom:12;");
+		statusbar.append(Span("Not running").id("runstatus").addClass("notrunning"));
+		prj.append(statusbar);
+		var div=Div().addClass("cmd");
+		var slct = Select().addStyle("margin: 0.5em;").options(data.projects,data.config.current);
+		div.append(slct);
+		div.append(Button("New ...").id("create").add("titel","Create new file."));
+		div.append(Button("New Project").id("newproject"));
+		div.append(Button("Options").id("options"));
+		div.append(Button("Run").id("runscripts"));
+		div.append(Button("Pause").id("pause"));
+		div.append(Button("Resume").id("resume"));
+		div.append(Button("Stop").id("stop"));
+		div.append(Button("Log").id("logbutton"));
+		prj.append(div);
+		prj.render($("#projectcmd"),true);
+		$("#runscripts").button({width:150,icons:{ primary: "wsplay"}}).click(runscript);
+		$("#pause").button({width:150,titel:"Pause",icons:{ primary: "wspause"}}).click(pausescript);
+		$("#resume").button({width:150,icons:{ primary: "wsresume"}}).click(resumescript);
+		$("#stop").button({width:150,icons:{ primary: "wsstop"}}).click(stopscript);
+		$("#logbutton").button({width:150,icons:{ primary: "wslog"}}).click(function() { $("#logdlg").dialog(); });
+
+		$("#newproject").button({width:150,icons:{ primary: "wsnewproject"}}).click(function() { 
+			div=Div('Enter new file name: <input type="text">').id("newprojectdlg");
+			div.render($("body"));
+			$("#newprojectdlg").dialog({
+				close:function() {
+					$(this).dialog("destroy");
+					$(this).remove();
+				},
+				title:"Create new project",
+				buttons:[
+				{ 	text:"Ok",
+					click: function() {
+						var prj=$(this).find("input").val();
+						console.log("New project:",prj);
+						chnlman.send("newproject:" + prj + ";");
+						chnlman.send("projects:get;");
+						$(this).dialog("close");
+					}
+				},
+				{ 	text:"Cancel",
+					click: function() {
+						//console.log("Create Cancel");
+						$(this).dialog("close");
+					}
+				}
+				],
+			});
+		});
+		
+		$("#create").button({width:150,icons:{ primary: "wsadd"}}).click(function(ev,ui){
+			div=Div('Enter new file name: <input type="text">').id("createdlg");
+			div.render($("body"));
+			$("#createdlg").dialog({
+				close:function() {
+					$(this).dialog("destroy");
+					$(this).remove();
+				},
+				title:"Create new file",
+				buttons:[
+				{ 	text:"Ok",
+					click: function() {
+						var file=$(this).find("input").val();
+						var htmlfile="<head>\n</head>\n<html>\n</html>\n<body>\n</body>\n";
+						var jsfile=	"/*\n"+
+									" *\n"+
+									" *   File " + file + "\n"+
+									" *\n"+
+									" */\n";
+						if(file.substr(-3)==".js") chnlman.send("savefile:" + config.current + "/" + file + ";" + jsfile);
+							else if(file.substr(-5)==".html") chnlman.send("savefile:" + config.current + "/" + file + ";" + htmlfile);
+								else chnlman.send("savefile:" + config.current + "/" + file + ";\n");
+						//console.log("Create Ok",file);
+						$(this).dialog("close");
+					}
+				},
+				{ 	text:"Cancel",
+					click: function() {
+						//console.log("Create Cancel");
+						$(this).dialog("close");
+					}
+				}
+				],
+			});
+			//console.log("Create file");
+		});
+		$("#options").button({width:150,icons:{ primary: "wsoptions"}}).click(function(ev,ui){
+			var div=Div().id("optionsdlg")
+				.append('Start script<input type="text" name="startscript" value="' + config.startscript + '">')
+				.append('Ui script<input type="text" name="uiscript" value="' + config.uiscript + '">');
+			div.render($("body"));
+			$("#optionsdlg").dialog({
+				title:"Options",
+				buttons:[
+						{
+							text:"Ok",
+							click:function(){ 
+								var ss=$(this).find("input[name=startscript]").val();
+								var uis=$(this).find("input[name=uiscript]").val();
+								//console.log("Options Ok Start " + ss + " ui " + uis); 
+								config.startscript=ss;
+								config.uiscript=uis;
+								chnlman.send("saveproject:" + config.current + ";" + JSON.stringify(config));								
+								$(this).dialog("close"); 
+							}
+						},
+						{
+							text:"Cancel",
+							click:function(){ $(this).dialog("close"); }
+						}
+					],
+				close:function() {
+					$(this).dialog("destroy");
+					$(this).remove();
+				}
+			});
+		});
+		$("#projectpanel").find('select').selectmenu({ width:150,
+			change:function(ev,ui) {
+				var ed=editAreaLoader.getAllFiles("editor");
+				var unsaved=[];
+				for(var fl in ed) {	
+					if(ed[fl].edited) {
+						unsaved.push(fl);
+					}
+				}
+				if(unsaved.length==0) {
+					for(var fl in ed) {	
+						closefile(fl);
+					}
+					config.current=ui.item.value;
+					chnlman.send("saveproject:" + config.current + ";none");								
+					chnlman.send("projects:get;");
+				} else {
+					var dlg=Div("Following file are not saved<br>").id("savedlg");
+					for(var i=0;i<unsaved.length;i++) dlg.append(Span(unsaved[i]).addStyle("width:150;float:left;"));
+					dlg.render($("body"));
+					$("#savedlg").dialog({
+						width:400,
+						buttons:[
+						{
+							text: "Save",
+								  click: function() {
+										for(var fl in ed) {	
+											closefile(fl,ed[fl].edited);
+										}
+										config.current=ui.item.value;
+										chnlman.send("saveproject:" + config.current + ";none");								
+										chnlman.send("projects:get;");
+										$( this ).dialog( "close" );
+								  }
+						},
+						{
+							text: "Don't save",
+								  click: function() {
+										for(var fl in ed) {	
+											closefile(fl);
+										}
+										config.current=ui.item.value;
+										chnlman.send("saveproject:" + config.current + ";none");								
+										chnlman.send("projects:get;");
+										$( this ).dialog( "close" );
+								  }
+						},
+						{
+							text: "Cancel",
+								  click: function() {
+									chnlman.send("projects:heloo world;");
+									chnlman.send("projects:get;");
+									$( this ).dialog( "close" );
+								  }
+						}
+						],
+						close: function() {  
+							$(this).dialog("destroy");
+							$(this).remove();
+						}											
+					});
+					
+				}
+			}
+		});
+	});
+	chnlman.on("files",function(data) {
+		var flds=Fieldset(Legend("Files " + config.current)).id("files");
+		var ul=Ul().id("filelist").addClass("filelist");
+		for(var i=0;i < data.files.length;i++) {
+			ul.append(Li(data.files[i]).addClass("filelistitem"));
+		}
+		flds.append(Div(ul).id("scrolllist"));
+		var dlg=Div(flds).id("filesdlg");
+		$("body").append(dlg.render());
+		$("#filesdlg").dialog({
+			close: function() {  
+				$(this).dialog("destroy");
+				$(this).remove();
+			}
+		});
+		$("#filelist").menu({
+			select:function(e,ui) {
+				var filename=$(ui.item[0]).text();
+				var fn = "projects/" + config.current + "/" + filename;
+				//console.log("Select files",fn);
+				
+				$.ajax({
+				  url: fn,
+				  beforeSend: function( xhr ) {
+					xhr.overrideMimeType( "text/plain; charset=x-user-defined" );
+				  }
+				})
+				  .done(function( data ) {
+					  //console.log( data );
+					var new_file= {id: filename, text: data, syntax: 'js'};
+					editAreaLoader.openFile('editor', new_file);
+					$("#filesdlg").dialog("close");
+				  });								
+			},
+			width:150});
+		$("#scrolllist").slimscroll({width:200,height:"18.5em"});
+		//console.log("Rcv files ",data.files) 
+	});
+	$("#clearbutton").button({icons:{ primary: "wsclear"}}).click(function() { 
+			$("#custom1").empty();
+			$("#custom2").empty();
+			$("#custom3").empty();
+});
+
+})
+</script>
+Socket:
+<div><span id="sckStatus">Disconnected</span></div>
+<div><button id="clearbutton">Clear Page</button></div>
+<div><ul id="sckMsg"></ul></div>
+<div class="powersupply">
+<fieldset>
+	<legend>PowerSupply</legend>
+	<div id="volt">Volt: <span id="voltvalue" style="margin:5px;">0.0</span>V
+		Current:<span id="currentvalue" style="margin:5px;">0.0</span>mA
+		Type:<span id="pstype" style="margin:5px;">none</span>
+	</div>
+</fieldset>
+</div>
+<div id="custom1" class="costumbar"></div>
+<div id="custom2" class="costumbar"></div>
+<div id="custom3" class="custombar"></div>
+<dir id="projectcmd"></dir>
+<div>
+	<textarea id="editor"></textarea>
+</div>
+
+
+

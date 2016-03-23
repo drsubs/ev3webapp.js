@@ -1,0 +1,92 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<HTML>
+<HEAD>
+	<META HTTP-EQUIV="CONTENT-TYPE" CONTENT="text/html; charset=windows-1252">
+	<TITLE></TITLE>
+	<META NAME="GENERATOR" CONTENT="OpenOffice 4.1.1  (Win32)">
+	<META NAME="AUTHOR" CONTENT="Bo Boye">
+	<META NAME="CREATED" CONTENT="20160209;1445681">
+	<META NAME="CHANGEDBY" CONTENT="Bo Boye">
+	<META NAME="CHANGED" CONTENT="20160311;15550317">
+	<META NAME="CHANGEDBY" CONTENT="Bo Boye">
+	<STYLE TYPE="text/css">
+	<!--
+		CODE.cjk { font-family: "NSimSun", monospace }
+	-->
+	</STYLE>
+</HEAD>
+<BODY LANG="da-DK" DIR="LTR">
+<H1 LANG="en-US">JS web app for ev3dev</H1>
+<P LANG="en-US">WS is a web server with web socket functions and
+build in javascript engine for ev3dev linux distro.</P>
+<P LANG="en-US">The ide is a development platform in a web
+application. 
+</P>
+<P LANG="en-US">Your projects is build of to javascript files, edited
+directly in the web app, one script to run on the brick and one
+script to extend the web app. And there is serverel examples on that
+in the installation. In your  brick script , you declare the function
+loop, a fall throu function.</P>
+<P LANG="en-US"><CODE CLASS="western">var a=0;</CODE></P>
+<P LANG="en-US"><CODE CLASS="western">function loop() {</CODE></P>
+<P LANG="en-US"><CODE CLASS="western">	if(a!=Motor.outA.read(&ldquo;position&rdquo;))
+{</CODE></P>
+<P LANG="en-US"><CODE CLASS="western">		a=Motor.outA.read(&ldquo;position&rdquo;);</CODE></P>
+<P LANG="en-US"><CODE CLASS="western">		Msg.log(&ldquo;Motor
+position: &rdquo; + a);</CODE></P>
+<P LANG="en-US"><CODE CLASS="western">	}	</CODE></P>
+<P LANG="en-US"><CODE CLASS="western">}</CODE></P>
+<P LANG="en-US">In this example we check if motor position has
+changed, and report it if it has.</P>
+<P LANG="en-US">Here we see two of the build in objects, Msg and
+Motors, we have the following obj available in the brick script
+environment:</P>
+<P LANG="en-US">	Motors &ndash; Contains motor objects, that contains
+basic controls for each motor. 
+</P>
+<P LANG="en-US">		Methods: 
+</P>
+<P LANG="en-US">			read(property);</P>
+<P LANG="en-US">			write(property,value);</P>
+<P LANG="en-US">		Example:</P>
+<P LANG="en-US"><CODE CLASS="western">		var motorA = Motors.outA;</CODE></P>
+<P LANG="en-US"><CODE CLASS="western">		motorA.write(&ldquo;command&rdquo;,&rdquo;reset&rdquo;);</CODE></P>
+<P>	</P>
+<P LANG="en-US">	Sensors</P>
+<P LANG="en-US">		Methods: 
+</P>
+<P LANG="en-US">			read(property);</P>
+<P LANG="en-US">			write(property,value);</P>
+<P LANG="en-US">		Example:</P>
+<P LANG="en-US">		<CODE CLASS="western">var t =
+Sensor.in1.read(&ldquo;value0&rdquo;);</CODE></P>
+<P LANG="en-US"><CODE CLASS="western">		Msg.log(&ldquo;Sensor 1
+value: &rdquo; + t);</CODE></P>
+<P LANG="en-US">	Msg</P>
+<P LANG="en-US">		Methods:</P>
+<P LANG="en-US">			log(msg);</P>
+<P LANG="en-US">			send(channel,msg);</P>
+<P LANG="en-US"><BR><BR>
+</P>
+<P LANG="en-US">In init() you create all your objects and in loop you
+use them.</P>
+<P LANG="en-US">All ports are enummerated at startup by the Ports
+object that are global stored in &ldquo;Ports *ports&rdquo;. There is
+a special &ldquo;port&rdquo;, Messenger, it is used to send messages
+thrue the web server to</P>
+<P LANG="en-US">the web page(see test-radar). It is manuelly created
+to bind to a channel and must be done in init.</P>
+<P LANG="en-US">To use the ports workers are made for all types of
+devices: 
+</P>
+<P LANG="en-US" STYLE="margin-left: 2cm">Touch for touch sensor.</P>
+<P LANG="en-US" STYLE="margin-left: 2cm">ColColor for color sensor in
+COL-COLOR mode.</P>
+<P LANG="en-US" STYLE="margin-left: 2cm">Prox for ir sensor in
+IR-PROX mode</P>
+<P LANG="en-US" STYLE="margin-left: 2cm">Remote for ir sensor in
+IR-REM-A mode.</P>
+<P STYLE="margin-left: 2cm"><BR><BR>
+</P>
+</BODY>
+</HTML>
